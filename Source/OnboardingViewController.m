@@ -11,13 +11,13 @@
 @import Accelerate;
 
 static CGFloat const kPageControlHeight = 35;
-static CGFloat const kSkipButtonWidth = 100;
+static CGFloat const kSkipButtonWidth = 70;
 static CGFloat const kSkipButtonHeight = 44;
-static CGFloat const kBackgroundMaskAlpha = 0.6;
+static CGFloat const kBackgroundMaskAlpha = 0.48;
 static CGFloat const kDefaultBlurRadius = 20;
 static CGFloat const kDefaultSaturationDeltaFactor = 1.8;
 
-static NSString * const kSkipButtonText = @"Skip";
+static NSString * const kSkipButtonText = @"SKIP";
 
 @implementation OnboardingViewController {
     NSURL *_videoURL;
@@ -27,16 +27,13 @@ static NSString * const kSkipButtonText = @"Skip";
     OnboardingContentViewController *_upcomingPage;
 }
 
-- (void)dealloc {
-    [[NSNotificationCenter defaultCenter] removeObserver:self forKeyPath:UIApplicationWillEnterForegroundNotification];
-}
 
 #pragma mark - Initializing with images
 
 + (instancetype)onboardWithBackgroundImage:(UIImage *)backgroundImage contents:(NSArray *)contents {
-     OnboardingViewController *onboardingVC = [[self alloc] initWithBackgroundImage:backgroundImage contents:contents];
-     return onboardingVC;
- }
+    OnboardingViewController *onboardingVC = [[self alloc] initWithBackgroundImage:backgroundImage contents:contents];
+    return onboardingVC;
+}
 
 - (instancetype)initWithBackgroundImage:(UIImage *)backgroundImage contents:(NSArray *)contents {
     self = [self initWithContents:contents];
@@ -82,19 +79,18 @@ static NSString * const kSkipButtonText = @"Skip";
     self.swipingEnabled = YES;
     self.hidePageControl = NO;
     
-    self.allowSkipping = NO;
+    self.allowSkipping = YES;
     self.skipHandler = ^{};
     
     // create the initial exposed components so they can be customized
     self.pageControl = [UIPageControl new];
     self.pageControl.numberOfPages = self.viewControllers.count;
     self.pageControl.userInteractionEnabled = NO;
-
+    
     self.skipButton = [UIButton new];
     [self.skipButton setTitle:kSkipButtonText forState:UIControlStateNormal];
     [self.skipButton addTarget:self action:@selector(handleSkipButtonPressed) forControlEvents:UIControlEventTouchUpInside];
-    self.skipButton.titleLabel.adjustsFontSizeToFitWidth = YES;
-
+    
     // create the movie player controller
     self.moviePlayerController = [MPMoviePlayerController new];
     
@@ -143,15 +139,17 @@ static NSString * const kSkipButtonText = @"Skip";
         [self blurBackground];
     }
     
-    UIImageView *backgroundImageView;
-    
     // create the background image view and set it to aspect fill so it isn't skewed
-    if (self.backgroundImage) {
-        backgroundImageView = [[UIImageView alloc] initWithFrame:self.view.bounds];
-        backgroundImageView.contentMode = UIViewContentModeScaleAspectFill;
-        [backgroundImageView setImage:self.backgroundImage];
-        [self.view addSubview:backgroundImageView];
-    }
+    _currentBackgroundImageView = [[UIImageView alloc] initWithFrame:self.view.bounds];
+    _currentBackgroundImageView.contentMode = UIViewContentModeScaleAspectFill;
+    _currentBackgroundImageView.image = [((OnboardingContentViewController *)self.viewControllers[0]) currentImage];
+    [self.view addSubview:_currentBackgroundImageView];
+    [_pageVC.view sendSubviewToBack:_currentBackgroundImageView];
+
+    _incomingBackgroundImageView = [[UIImageView alloc] initWithFrame:self.view.bounds];
+    _incomingBackgroundImageView.contentMode = UIViewContentModeScaleAspectFill;
+    [self.view addSubview:_incomingBackgroundImageView];
+    [_pageVC.view sendSubviewToBack:_incomingBackgroundImageView];
     
     // as long as the shouldMaskBackground setting hasn't been set to NO, we want to
     // create a partially opaque view and add it on top of the image view, so that it
@@ -162,13 +160,13 @@ static NSString * const kSkipButtonText = @"Skip";
         backgroundMaskView.backgroundColor = [UIColor colorWithWhite:0.0 alpha:kBackgroundMaskAlpha];
         [_pageVC.view addSubview:backgroundMaskView];
     }
-
+    
     // set ourself as the delegate on all of the content views, to handle fading
     // and auto-navigation
     for (OnboardingContentViewController *contentVC in self.viewControllers) {
         contentVC.delegate = self;
     }
-
+    
     // set the initial current page as the first page provided
     _currentPage = [self.viewControllers firstObject];
     
@@ -180,13 +178,8 @@ static NSString * const kSkipButtonText = @"Skip";
     [_pageVC didMoveToParentViewController:self];
     [_pageVC.view sendSubviewToBack:backgroundMaskView];
     
-    // send the background image view to the back if we have one
-    if (backgroundImageView) {
-        [_pageVC.view sendSubviewToBack:backgroundImageView];
-    }
-    
     // otherwise send the video view to the back if we have one
-    else if (_videoURL) {
+    if (_videoURL) {
         self.moviePlayerController.contentURL = _videoURL;
         self.moviePlayerController.view.frame = _pageVC.view.frame;
         self.moviePlayerController.repeatMode = MPMovieRepeatModeOne;
@@ -204,8 +197,11 @@ static NSString * const kSkipButtonText = @"Skip";
     
     // if we allow skipping, setup the skip button
     if (self.allowSkipping) {
-        self.skipButton.frame = CGRectMake(CGRectGetMaxX(self.view.frame) - kSkipButtonWidth, CGRectGetMaxY(self.view.frame) - self.underPageControlPadding - kSkipButtonHeight, kSkipButtonWidth, kSkipButtonHeight);
+        OnboardingContentViewController *firstPage = (OnboardingContentViewController *)self.viewControllers.firstObject;
+        self.skipButton.frame = CGRectMake(CGRectGetMaxX(self.view.frame) - kSkipButtonWidth, CGRectGetMinY(self.view.frame) + kSkipButtonHeight / 2, kSkipButtonWidth, kSkipButtonHeight);
+        [self.skipButton.titleLabel setFont:[UIFont fontWithName:firstPage.bodyFontName size: firstPage.bodyFontSize - 2]];
         [self.view addSubview:self.skipButton];
+        [self.view bringSubviewToFront:self.skipButton];
     }
     
     // if we want to fade the transitions, we need to tap into the underlying scrollview
@@ -217,6 +213,34 @@ static NSString * const kSkipButtonText = @"Skip";
                 [(UIScrollView *)view setDelegate:self];
             }
         }
+    }
+    
+    if(self.showSignInButtons) {
+        CGFloat halfWidth = CGRectGetWidth(self.view.frame) / 2;
+        CGFloat yCoord = CGRectGetMaxY(self.view.frame) - self.signInButtonHeight;
+        
+        CGRect signInFrame = CGRectMake(0, yCoord, halfWidth, self.signInButtonHeight);
+        self.signInButton = [[UIButton alloc] initWithFrame:signInFrame];
+        self.signInButton.backgroundColor = self.signInButtonColor;
+        self.signInButton.titleLabel.textColor = self.signInButtonTextColor;
+        self.signInButton.titleLabel.font = self.signInButtonFont;
+        [self.signInButton setTitle:@"LOG IN" forState:UIControlStateNormal];
+        [self.signInButton addTarget:self action:@selector(handleSignInButtonPressed) forControlEvents:UIControlEventTouchUpInside];
+        
+        UIView *borderView = [[UIView alloc] initWithFrame:CGRectMake(halfWidth - 0.5, yCoord + 5, 0.5, self.signInButtonHeight - 10)];
+        borderView.backgroundColor = [UIColor whiteColor];
+        
+        CGRect signUpFrame = CGRectMake(halfWidth, yCoord, halfWidth, self.signInButtonHeight);
+        self.signUpButton = [[UIButton alloc] initWithFrame:signUpFrame];
+        self.signUpButton.backgroundColor = self.signInButtonColor;
+        self.signUpButton.titleLabel.textColor = self.signInButtonTextColor;
+        self.signUpButton.titleLabel.font = self.signInButtonFont;
+        [self.signUpButton setTitle:@"SIGN UP" forState:UIControlStateNormal];
+        [self.signUpButton addTarget:self action:@selector(handleSignUpButtonPressed) forControlEvents:UIControlEventTouchUpInside];
+        
+        [self.view addSubview:self.signUpButton];
+        [self.view addSubview:self.signInButton];
+        [self.view addSubview:borderView];
     }
 }
 
@@ -237,8 +261,27 @@ static NSString * const kSkipButtonText = @"Skip";
     }
 }
 
+#pragma mark - Sign Up / Sign in
+
+- (void)handleSignUpButtonPressed {
+    if(self.signUpHandler) {
+        self.signUpHandler();
+    }
+}
+
+- (void)handleSignInButtonPressed {
+    if (self.signInHandler) {
+        self.signInHandler();
+    }
+}
 
 #pragma mark - Convenience setters for content pages
+
+- (void)setMaskOpacity:(CGFloat)maskOpacity {
+    for (OnboardingContentViewController *contentVC in self.viewControllers) {
+        contentVC.maskOpacity = maskOpacity;
+    }
+}
 
 - (void)setIconSize:(CGFloat)iconSize {
     for (OnboardingContentViewController *contentVC in self.viewControllers) {
@@ -327,12 +370,6 @@ static NSString * const kSkipButtonText = @"Skip";
     }
 }
 
-- (void)setUnderIconPadding:(CGFloat)underIconPadding {
-    for (OnboardingContentViewController *contentVC in self.viewControllers) {
-        contentVC.underIconPadding = underIconPadding;
-    }
-}
-
 - (void)setUnderTitlePadding:(CGFloat)underTitlePadding {
     for (OnboardingContentViewController *contentVC in self.viewControllers) {
         contentVC.underTitlePadding = underTitlePadding;
@@ -347,7 +384,7 @@ static NSString * const kSkipButtonText = @"Skip";
 
 - (void)setUnderPageControlPadding:(CGFloat)underPageControlPadding {
     _underPageControlPadding = underPageControlPadding;
-
+    
     for (OnboardingContentViewController *contentVC in self.viewControllers) {
         contentVC.underPageControlPadding = underPageControlPadding;
     }
@@ -388,9 +425,10 @@ static NSString * const kSkipButtonText = @"Skip";
     
     // get the view controller we are moving towards, then get the index, then set it as the current page
     // for the page control dots
-    UIViewController *viewController = [pageViewController.viewControllers lastObject];
+    OnboardingContentViewController *viewController = [pageViewController.viewControllers lastObject];
     NSInteger newIndex = [self.viewControllers indexOfObject:viewController];
     [self.pageControl setCurrentPage:newIndex];
+    _currentBackgroundImageView.image = [viewController currentImage];
 }
 
 - (void)moveNextPage {
@@ -413,7 +451,27 @@ static NSString * const kSkipButtonText = @"Skip";
     _upcomingPage = nextPage;
 }
 
+- (void)scrollViewWillEndDragging:(UIScrollView *)scrollView withVelocity:(CGPoint)velocity targetContentOffset:(inout CGPoint *)targetContentOffset
+{
+    NSUInteger currentPageIndex = [self.viewControllers indexOfObject:_currentPage];
+    if (0 == currentPageIndex && scrollView.contentOffset.x <= scrollView.bounds.size.width) {
+        *targetContentOffset = CGPointMake(scrollView.bounds.size.width, 0);
+    }
+    if ((currentPageIndex == [self.viewControllers count]-1) && scrollView.contentOffset.x >= scrollView.bounds.size.width) {
+        *targetContentOffset = CGPointMake(scrollView.bounds.size.width, 0);
+    }
+}
+
 - (void)scrollViewDidScroll:(UIScrollView *)scrollView {
+    // Stop bounce at the edges of the page view
+    NSUInteger currentPageIndex = [self.viewControllers indexOfObject:_currentPage];
+    if (0 == currentPageIndex && scrollView.contentOffset.x < scrollView.bounds.size.width) {
+        scrollView.contentOffset = CGPointMake(scrollView.bounds.size.width, 0);
+    }
+    if ((currentPageIndex == [self.viewControllers count]-1) && scrollView.contentOffset.x > scrollView.bounds.size.width) {
+        scrollView.contentOffset = CGPointMake(scrollView.bounds.size.width, 0);
+    }
+    
     // calculate the percent complete of the transition of the current page given the
     // scrollview's offset and the width of the screen
     CGFloat percentComplete = fabs(scrollView.contentOffset.x - self.view.frame.size.width) / self.view.frame.size.width;
@@ -425,6 +483,12 @@ static NSString * const kSkipButtonText = @"Skip";
         return;
     }
     
+    _incomingBackgroundImageView.image = [_upcomingPage currentImage];
+    _incomingBackgroundImageView.alpha = percentComplete;
+    
+    _currentBackgroundImageView.image = [_currentPage currentImage];
+    _currentBackgroundImageView.alpha = percentCompleteInverse;
+    
     // set the next page's alpha to be the percent complete, so if we're 90% of the way
     // scrolling towards the next page, its content's alpha should be 90%
     [_upcomingPage updateAlphas:percentComplete];
@@ -432,7 +496,7 @@ static NSString * const kSkipButtonText = @"Skip";
     // set the current page's alpha to the difference between 100% and this percent value,
     // so we're 90% scrolling towards the next page, the current content's alpha sshould be 10%
     [_currentPage updateAlphas:percentCompleteInverse];
-
+    
     // determine if we're transitioning to or from our last page
     BOOL transitioningToLastPage = (_upcomingPage == self.viewControllers.lastObject);
     BOOL transitioningFromLastPage = (_currentPage == self.viewControllers.lastObject) && (_upcomingPage == self.viewControllers[self.viewControllers.count - 2]);
@@ -442,18 +506,18 @@ static NSString * const kSkipButtonText = @"Skip";
         if (transitioningToLastPage) {
             _pageControl.alpha = percentCompleteInverse;
         }
-
+        
         else if (transitioningFromLastPage) {
             _pageControl.alpha = percentComplete;
         }
     }
-
+    
     // fade the skip button to and from the last page
     if (self.fadeSkipButtonOnLastPage) {
         if (transitioningToLastPage) {
             _skipButton.alpha = percentCompleteInverse;
         }
-
+        
         else if (transitioningFromLastPage) {
             _skipButton.alpha = percentComplete;
         }
@@ -586,6 +650,10 @@ static NSString * const kSkipButtonText = @"Skip";
     UIGraphicsEndImageContext();
     
     self.backgroundImage = outputImage;
+}
+
+- (BOOL)prefersStatusBarHidden {
+    return YES;
 }
 
 @end

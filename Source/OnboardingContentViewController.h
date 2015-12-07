@@ -7,11 +7,8 @@
 //
 
 #import <UIKit/UIKit.h>
-@import MediaPlayer;
 
 @class OnboardingViewController;
-
-typedef void (^action_callback)(OnboardingViewController *onboardController);
 
 @interface OnboardingContentViewController : UIViewController {
     NSString *_titleText;
@@ -28,6 +25,8 @@ typedef void (^action_callback)(OnboardingViewController *onboardController);
 @property (nonatomic) OnboardingViewController *delegate;
 
 @property (nonatomic) BOOL movesToNextViewController;
+
+@property (nonatomic) CGFloat maskOpacity;
 
 @property (nonatomic) CGFloat iconHeight;
 @property (nonatomic) CGFloat iconWidth;
@@ -46,12 +45,11 @@ typedef void (^action_callback)(OnboardingViewController *onboardController);
 @property (nonatomic) CGFloat buttonFontSize;
 
 @property (nonatomic) CGFloat topPadding;
-@property (nonatomic) CGFloat underIconPadding;
 @property (nonatomic) CGFloat underTitlePadding;
 @property (nonatomic) CGFloat bottomPadding;
 @property (nonatomic) CGFloat underPageControlPadding;
 
-@property (nonatomic, copy) action_callback buttonActionHandler;
+@property (nonatomic, copy) dispatch_block_t buttonActionHandler;
 
 @property (nonatomic, copy) dispatch_block_t viewWillAppearBlock;
 @property (nonatomic, copy) dispatch_block_t viewDidAppearBlock;
@@ -60,15 +58,8 @@ typedef void (^action_callback)(OnboardingViewController *onboardController);
 
 + (instancetype)contentWithTitle:(NSString *)title body:(NSString *)body image:(UIImage *)image buttonText:(NSString *)buttonText action:(dispatch_block_t)action;
 - (instancetype)initWithTitle:(NSString *)title body:(NSString *)body image:(UIImage *)image buttonText:(NSString *)buttonText action:(dispatch_block_t)action;
-+ (instancetype)contentWithTitle:(NSString *)title body:(NSString *)body image:(UIImage *)image buttonText:(NSString *)buttonText actionBlock:(action_callback)actionBlock;
-
-+ (instancetype)contentWithTitle:(NSString *)title body:(NSString *)body videoURL:(NSURL *)videoURL buttonText:(NSString *)buttonText action:(dispatch_block_t)action;
-- (instancetype)initWithTitle:(NSString *)title body:(NSString *)body videoURL:(NSURL *)videoURL  buttonText:(NSString *)buttonText action:(dispatch_block_t)action;
-+ (instancetype)contentWithTitle:(NSString *)title body:(NSString *)body videoURL:(NSURL *)videoURL  buttonText:(NSString *)buttonText actionBlock:(action_callback)actionBlock;
-
-- (instancetype)initWithTitle:(NSString *)title body:(NSString *)body image:(UIImage *)image buttonText:(NSString *)buttonText actionBlock:(action_callback)actionBlock;
-- (instancetype)initWithTitle:(NSString *)title body:(NSString *)body image:(UIImage *)image videoURL:videoURL buttonText:(NSString *)buttonText actionBlock:(action_callback)actionBlock;
 
 - (void)updateAlphas:(CGFloat)newAlpha;
+- (UIImage *)currentImage;
 
 @end

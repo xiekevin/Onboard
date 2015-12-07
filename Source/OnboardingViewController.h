@@ -37,6 +37,21 @@
 // Skip Button
 @property (nonatomic, strong) UIButton *skipButton;
 
+// Login/Signup Buttons
+@property (nonatomic) BOOL showSignInButtons;
+@property (nonatomic) CGFloat signInButtonHeight;
+@property (nonatomic, strong) UIColor *signInButtonColor;
+@property (nonatomic, strong) UIColor *signInButtonTextColor;
+@property (nonatomic, strong) UIFont *signInButtonFont;
+@property (nonatomic, strong) UIButton *signInButton;
+@property (nonatomic, strong) UIButton *signUpButton;
+@property (nonatomic, strong) dispatch_block_t signInHandler;
+@property (nonatomic, strong) dispatch_block_t signUpHandler;
+
+// Blending background view
+@property (nonatomic, strong) UIImageView *currentBackgroundImageView;
+@property (nonatomic, strong) UIImageView *incomingBackgroundImageView;
+
 // Movie player
 @property (nonatomic) BOOL stopMoviePlayerWhenDisappear;
 @property (nonatomic) MPMoviePlayerController *moviePlayerController;
@@ -77,11 +92,11 @@
 @property (nonatomic) CGFloat buttonFontSize;
 
 @property (nonatomic) CGFloat topPadding;
-@property (nonatomic) CGFloat underIconPadding;
 @property (nonatomic) CGFloat underTitlePadding;
 @property (nonatomic) CGFloat bottomPadding;
 @property (nonatomic) CGFloat underPageControlPadding;
 
+@property (nonatomic) CGFloat maskOpacity;
 ////////////////////////////////////////////////////////////////////
 
 
