@@ -429,6 +429,15 @@ static NSString * const kSkipButtonText = @"SKIP";
     NSInteger newIndex = [self.viewControllers indexOfObject:viewController];
     [self.pageControl setCurrentPage:newIndex];
     _currentBackgroundImageView.image = [viewController currentImage];
+    
+    if (_currentBackgroundImageView.alpha != 0) {
+        [UIView animateWithDuration:0.45 animations:^{
+            [_currentPage updateAlphas:1.0];
+            _currentBackgroundImageView.alpha = 1.0;
+            _incomingBackgroundImageView.alpha = 0;
+            [_upcomingPage updateAlphas:1.0];
+        }];
+    }
 }
 
 - (void)moveNextPage {
