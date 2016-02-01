@@ -26,8 +26,6 @@
 
 @property (nonatomic) BOOL movesToNextViewController;
 
-@property (nonatomic) CGFloat maskOpacity;
-
 @property (nonatomic) CGFloat iconHeight;
 @property (nonatomic) CGFloat iconWidth;
 

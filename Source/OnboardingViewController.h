@@ -96,7 +96,6 @@
 @property (nonatomic) CGFloat bottomPadding;
 @property (nonatomic) CGFloat underPageControlPadding;
 
-@property (nonatomic) CGFloat maskOpacity;
 ////////////////////////////////////////////////////////////////////
 
 

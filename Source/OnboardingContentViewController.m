@@ -166,11 +166,6 @@ static CGFloat const kMainPageControlHeight = 35;
 - (void)generateView {
     // we want our background to be clear so we can see through it to the image provided
     self.view.backgroundColor = [UIColor clearColor];
-    if (_maskOpacity > 0) {
-        UIView *backgroundMaskView = [[UIView alloc] initWithFrame: self.view.frame];
-        backgroundMaskView.backgroundColor = [UIColor colorWithWhite:0.0 alpha:_maskOpacity];
-        [self.view addSubview:backgroundMaskView];
-    }
     
     // do some calculation for some common values we'll need, namely the width of the view,
     // the center of the width, and the content width we want to fill up, which is some

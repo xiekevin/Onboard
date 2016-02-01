@@ -277,12 +277,6 @@ static NSString * const kSkipButtonText = @"SKIP";
 
 #pragma mark - Convenience setters for content pages
 
-- (void)setMaskOpacity:(CGFloat)maskOpacity {
-    for (OnboardingContentViewController *contentVC in self.viewControllers) {
-        contentVC.maskOpacity = maskOpacity;
-    }
-}
-
 - (void)setIconSize:(CGFloat)iconSize {
     for (OnboardingContentViewController *contentVC in self.viewControllers) {
         contentVC.iconWidth = iconSize;
